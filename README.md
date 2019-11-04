@@ -5,8 +5,8 @@
 To start the server
 
 ```
-yarn install
-yarn start
+npm install
+npm start
 ```
 
 ### Usage
@@ -72,7 +72,7 @@ The application comes with the following api endpoints
 To run the unit test.
 
 ```
-yarn test
+npm test
 ```
 
 
