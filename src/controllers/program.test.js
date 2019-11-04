@@ -1,8 +1,8 @@
 import mongoose from 'mongoose'
-import {Program, Statuses} from '../models/program'
+import {Program, Statuses, TransitionActions} from '../models/program'
 import {mockRequest, mockRespose} from '../utils/helpers/interceptor'
 
-import {getAllPrograms, createProgram, approveProgram, rejectProgram, holdProgram} from './program'
+import {getAllPrograms, createProgram, updateProgramStatus} from './program'
 
 describe('Program Controller', () => {
     beforeAll(async () => {
@@ -22,20 +22,13 @@ describe('Program Controller', () => {
     describe('#getAllPrograms', () => {
         it('should return 200 with list of all programs', async () => {
             const validProgram = new Program({status: Statuses.Pending})
-            const savedProgram = await validProgram.save()
+            await validProgram.save()
             const res = mockRespose()
             const req = mockRequest()
 
             await getAllPrograms(req, res)
             expect(res.status).toHaveBeenCalledWith(200)
-            expect(res.json).toHaveBeenCalledWith({
-                data: [{
-                    _id: savedProgram._id,
-                    status: savedProgram.status,
-                    transitions: savedProgram.transitions(),
-                    title: savedProgram.title
-                }]
-            })
+            expect(res.json).toHaveBeenCalledTimes(1)
 
         })
     })
@@ -62,84 +55,33 @@ describe('Program Controller', () => {
         })
     })
 
-    describe('#approveProgram', () => {
-        it('should return 200 with success equal true if program is successfully approved', async () => {
+    describe('#updateProgramStatus', () => {
+        it('should return 200 with success equal true if program is successfully transited', async () => {
             const validProgram = new Program({status: Statuses.Pending})
             const savedProgram = await validProgram.save()
             const res = mockRespose()
             const req = mockRequest()
             req.params.id = savedProgram._id
+            req.query.action = TransitionActions.Approve
 
-            await approveProgram(req, res)
+            await updateProgramStatus(req, res)
             expect(res.status).toHaveBeenCalledWith(200)
             expect(res.json).toHaveBeenCalledWith({data: {success: true}})
         })
 
-        it('should return 200 with success equal false if program is not successfully approved', async () => {
+        it('should return 200 with success equal false if program is not successfully transited', async () => {
             const validProgram = new Program({status: Statuses.Approved})
             const savedProgram = await validProgram.save()
             const res = mockRespose()
             const req = mockRequest()
             req.params.id = savedProgram._id
+            req.query.action = TransitionActions.Approve
 
-            await approveProgram(req, res)
+            await updateProgramStatus(req, res)
             expect(res.status).toHaveBeenCalledWith(200)
             expect(res.json).toHaveBeenCalledWith({data: {success: false}})
         })
 
-    })
-
-    describe('#rejectProgram', () => {
-        it('should return 200 with success equal true if program is successfully rejected', async () => {
-            const validProgram = new Program({status: Statuses.Pending})
-            const savedProgram = await validProgram.save()
-            const res = mockRespose()
-            const req = mockRequest()
-            req.params.id = savedProgram._id
-
-            await rejectProgram(req, res)
-            expect(res.status).toHaveBeenCalledWith(200)
-            expect(res.json).toHaveBeenCalledWith({data: {success: true}})
-        })
-
-        it('should return 200 with success equal false if program is not successfully rejected', async () => {
-            const validProgram = new Program({status: Statuses.Rejected})
-            const savedProgram = await validProgram.save()
-            const res = mockRespose()
-            const req = mockRequest()
-            req.params.id = savedProgram._id
-
-            await rejectProgram(req, res)
-            expect(res.status).toHaveBeenCalledWith(200)
-            expect(res.json).toHaveBeenCalledWith({data: {success: false}})
-        })
-    })
-
-
-    describe('#holdProgram', () => {
-        it('should return 200 with success equal true if program is successfully paused', async () => {
-            const validProgram = new Program({status: Statuses.Approved})
-            const savedProgram = await validProgram.save()
-            const res = mockRespose()
-            const req = mockRequest()
-            req.params.id = savedProgram._id
-
-            await holdProgram(req, res)
-            expect(res.status).toHaveBeenCalledWith(200)
-            expect(res.json).toHaveBeenCalledWith({data: {success: true}})
-        })
-
-        it('should return 200 with success equal false if program is not successfully paused', async () => {
-            const validProgram = new Program({status: Statuses.Pending})
-            const savedProgram = await validProgram.save()
-            const res = mockRespose()
-            const req = mockRequest()
-            req.params.id = savedProgram._id
-
-            await holdProgram(req, res)
-            expect(res.status).toHaveBeenCalledWith(200)
-            expect(res.json).toHaveBeenCalledWith({data: {success: false}})
-        })
     })
 
 })

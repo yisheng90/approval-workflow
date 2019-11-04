@@ -10,7 +10,7 @@ export const getAllPrograms = async (req, res) => {
                     title: program.title,
                     _id: program._id,
                     status: program.status,
-                    transitions: program.transitions()
+                    transitions: program.stateMachine.transitions()
                 }
             })
         })
@@ -38,48 +38,22 @@ export const createProgram = async (req, res) => {
     }
 }
 
-export const approveProgram = async (req, res) => {
+export const updateProgramStatus = async (req, res) => {
     try {
-
         const program = await Program.findOne({_id: req.params.id})
 
-        res.status(200).json({
-            data: {
-                success: program.approve()
-            }
-        })
+        if (program) {
+            const transit = program.transition(req.query.action)
+            program.save()
 
-    } catch (err) {
-        res.status(500).json(err)
-    }
-}
+            res.status(200).json({
+                data: {
+                    success: transit
+                }
+            })
+        }
 
-export const rejectProgram = async (req, res) => {
-    try {
-
-        const program = await Program.findOne({_id: req.params.id})
-
-        res.status(200).json({
-            data: {
-                success: program.reject()
-            }
-        })
-
-    } catch (err) {
-        res.status(500).json(err)
-    }
-}
-
-export const holdProgram = async (req, res) => {
-    try {
-
-        const program = await Program.findOne({_id: req.params.id})
-
-        res.status(200).json({
-            data: {
-                success: program.hold()
-            }
-        })
+        res.status(404).json({'error': 'Not Found'})
 
     } catch (err) {
         res.status(500).json(err)
@@ -90,13 +64,17 @@ export const deleteProgram = async (req, res) => {
     try {
 
         const program = await Program.findOne({_id: req.params.id})
-        program.remove()
+        if (program) {
+            await program.remove()
 
-        res.status(200).json({
-            data: {
-                success: true
-            }
-        })
+            res.status(200).json({
+                data: {
+                    success: true
+                }
+            })
+        }
+
+        res.status(404).json({'error': 'Not Found'})
 
     } catch (err) {
         res.status(500).json(err)

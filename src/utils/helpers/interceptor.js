@@ -1,6 +1,7 @@
 export const mockRequest = () => {
     const req = {}
     req.body = jest.fn().mockReturnValue(req)
+    req.query = jest.fn().mockReturnValue(req)
     req.params = jest.fn().mockReturnValue(req)
     return req
 }

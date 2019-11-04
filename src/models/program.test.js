@@ -30,102 +30,54 @@ describe('Program Model', () => {
         expect(savedProgram.status).toBe(validProgram.status)
     })
 
-    describe('#approve', () => {
-        it(`should update program status to ${Statuses.Approved} if current status is ${Statuses.Pending} or ${Statuses.Rejected}`, async () => {
-            const pendingProgram = new Program({...programData, status: Statuses.Pending})
-            const rejectedProgram = new Program({...programData, status: Statuses.Rejected})
-            const savedPendingProgram = await pendingProgram.save()
-            const savedRejectedProgram = await rejectedProgram.save()
+    describe('#transition', () => {
+        it(`should return true if the action is ${TransitionActions.Hold} current state is ${Statuses.Approved} or ${Statuses.Pending}`, async () => {
+            const program = new Program(programData)
 
-            expect(savedPendingProgram.status).toBe(Statuses.Pending)
-            expect(savedPendingProgram.approve()).toBe(true)
-            expect(savedPendingProgram.status).toBe(Statuses.Approved)
-
-            expect(savedRejectedProgram.status).toBe(Statuses.Rejected)
-            expect(savedRejectedProgram.approve()).toBe(true)
-            expect(savedRejectedProgram.status).toBe(Statuses.Approved)
+            expect(program.transition(TransitionActions.Hold)).toBe(true)
+            expect(program.status).toEqual(Statuses.Pending)
+            expect(program.logs).toHaveLength(1)
         })
 
-        it(`should return false if current status is not ${Statuses.Pending} or ${Statuses.Rejected}`, async () => {
-            const approvedProgram = new Program({...programData, status: Statuses.Approved})
-            const savedApprovedProgram = await approvedProgram.save()
+        it(`should return false if the action is ${TransitionActions.Hold} current state is not ${Statuses.Approved} or ${Statuses.Pending}`, async () => {
+            const program = new Program({status: Statuses.Pending})
 
-            expect(savedApprovedProgram.status).toBe(Statuses.Approved)
-            expect(savedApprovedProgram.approve()).toBe(false)
-        })
-    })
-
-    describe('#reject', () => {
-        it(`should update program status to ${Statuses.Rejected} if current status is ${Statuses.Pending} or ${Statuses.Approved}`, async () => {
-            const pendingProgram = new Program({...programData, status: Statuses.Pending})
-            const approvedProgram = new Program({...programData, status: Statuses.Approved})
-            const savedPendingProgram = await pendingProgram.save()
-            const savedApprovedProgram = await approvedProgram.save()
-
-            expect(savedPendingProgram.status).toBe(Statuses.Pending)
-            expect(savedPendingProgram.reject()).toBe(true)
-            expect(savedPendingProgram.status).toBe(Statuses.Rejected)
-
-            expect(savedApprovedProgram.status).toBe(Statuses.Approved)
-            expect(savedApprovedProgram.reject()).toBe(true)
-            expect(savedApprovedProgram.status).toBe(Statuses.Rejected)
+            expect(program.transition(TransitionActions.Hold)).toBe(false)
+            expect(program.status).toEqual(Statuses.Pending)
+            expect(program.logs).toHaveLength(0)
         })
 
-        it(`should return false if current status is not ${Statuses.Pending} or ${Statuses.Approved}`, async () => {
-            const rejectedProgram = new Program({...programData, status: Statuses.Rejected})
-            const savedRejectedProgram = await rejectedProgram.save()
 
-            expect(savedRejectedProgram.status).toBe(Statuses.Rejected)
-            expect(savedRejectedProgram.reject()).toBe(false)
-        })
-    })
+        it(`should return true if the action is ${TransitionActions.Approve} current state is ${Statuses.Pending} or ${Statuses.Rejected}`, async () => {
+            const program = new Program({status: Statuses.Pending})
 
-    describe('#hold', () => {
-        it(`should update program status to ${Statuses.Pending} if current status is ${Statuses.Approved} or ${Statuses.Rejected}`, async () => {
-            const rejectedProgram = new Program({...programData, status: Statuses.Rejected})
-            const approvedProgram = new Program({...programData, status: Statuses.Approved})
-            const savedRejectedProgram = await rejectedProgram.save()
-            const savedApprovedProgram = await approvedProgram.save()
-
-            expect(savedRejectedProgram.status).toBe(Statuses.Rejected)
-            expect(savedRejectedProgram.hold()).toBe(true)
-            expect(savedRejectedProgram.status).toBe(Statuses.Pending)
-
-            expect(savedApprovedProgram.status).toBe(Statuses.Approved)
-            expect(savedApprovedProgram.hold()).toBe(true)
-            expect(savedApprovedProgram.status).toBe(Statuses.Pending)
+            expect(program.transition(TransitionActions.Approve)).toBe(true)
+            expect(program.status).toEqual(Statuses.Approved)
+            expect(program.logs).toHaveLength(1)
         })
 
-        it(`should return false if current status is not ${Statuses.Approved} or ${Statuses.Rejected}`, async () => {
-            const rejectedProgram = new Program({...programData, status: Statuses.Pending})
-            const savedRejectedProgram = await rejectedProgram.save()
+        it(`should return false if the action is ${TransitionActions.Approve} current state is not ${Statuses.Pending} or ${Statuses.Rejected}`, async () => {
+            const program = new Program({status: Statuses.Approved})
 
-
-            expect(savedRejectedProgram.status).toBe(Statuses.Pending)
-            expect(savedRejectedProgram.hold()).toBe(false)
-        })
-    })
-
-    describe('#transitions', () => {
-        it(`should return [${TransitionActions.Approve}, ${TransitionActions.Reject}] if current status is ${Statuses.Pending}`, async () => {
-            const program = new Program({...programData, status: Statuses.Pending})
-            const savedProgram = await program.save()
-
-            expect(savedProgram.transitions()).toEqual([TransitionActions.Approve, TransitionActions.Reject])
+            expect(program.transition(TransitionActions.Approve)).toBe(false)
+            expect(program.status).toEqual(Statuses.Approved)
+            expect(program.logs).toHaveLength(0)
         })
 
-        it(`should return [${TransitionActions.Hold}, ${TransitionActions.Reject}] if current status is ${Statuses.Approved}`, async () => {
-            const program = new Program({...programData, status: Statuses.Approved})
-            const savedProgram = await program.save()
+        it(`should return true if the action is ${TransitionActions.Reject} current state is ${Statuses.Pending} or ${Statuses.Approved}`, async () => {
+            const program = new Program({status: Statuses.Pending})
 
-            expect(savedProgram.transitions()).toEqual([TransitionActions.Hold, TransitionActions.Reject])
+            expect(program.transition(TransitionActions.Reject)).toBe(true)
+            expect(program.status).toEqual(Statuses.Rejected)
+            expect(program.logs).toHaveLength(1)
         })
 
-        it(`should return [${TransitionActions.Hold}, ${TransitionActions.Approve}] if current status is ${Statuses.Rejected}`, async () => {
-            const program = new Program({...programData, status: Statuses.Rejected})
-            const savedProgram = await program.save()
+        it(`should return false if the action is ${TransitionActions.Reject} current state is not ${Statuses.Pending} or ${Statuses.Approved}`, async () => {
+            const program = new Program({status: Statuses.Rejected})
 
-            expect(savedProgram.transitions()).toEqual([TransitionActions.Hold, TransitionActions.Approve])
+            expect(program.transition(TransitionActions.Reject)).toBe(false)
+            expect(program.status).toEqual(Statuses.Rejected)
+            expect(program.logs).toHaveLength(0)
         })
     })
 })

@@ -53,73 +53,45 @@ const programSchema = new mongoose.Schema({
     }]
 }, {timestamps: {createdAt: true}})
 
+
+programSchema.post('init', function () {
+    this.stateMachine = StateMachine({
+        init: this.status,
+        transitions: stateTransitions
+    })
+})
+
 programSchema.pre('save', function (next) {
-    let program = this
-    const logs = program.logs || []
-
-    if (logs.length === 0 || program.status !== logs[logs.length -1].status) {
-        logs.push({
-            status: program.status,
-            date: Date.new
-        })
+    if (this.isNew && !this.logs) {
+        this.logs = [{
+            state: this.status,
+            date: new Date()
+        }]
     }
-
-    program.logs = logs
 
     next()
 })
 
-programSchema.methods.approve = function () {
-    const stateMachine = StateMachine({
-        init: this.status,
-        transitions: stateTransitions
-    })
+programSchema.methods.transition = function (action) {
+    if (!this.stateMachine) {
+        this.stateMachine = StateMachine({
+            init: this.status,
+            transitions: stateTransitions
+        })
+    }
 
-    if (stateMachine.approve()) {
-        this.status = stateMachine.state()
-        this.save()
+    if (this.stateMachine.can(action) && this.stateMachine[action]) {
+        this.stateMachine[action]()
+
+        this.status = this.stateMachine.state()
+        this.logs.push({
+            status: this.status,
+            date: new Date()
+        })
         return true
     }
 
     return false
-}
-
-programSchema.methods.reject = function () {
-    const stateMachine = StateMachine({
-        init: this.status,
-        transitions: stateTransitions
-    })
-
-    if (stateMachine.reject()) {
-        this.status = stateMachine.state()
-        this.save()
-        return true
-    }
-
-    return false
-}
-
-programSchema.methods.hold = function () {
-    const stateMachine = StateMachine({
-        init: this.status,
-        transitions: stateTransitions
-    })
-
-    if (stateMachine.hold()) {
-        this.status = stateMachine.state()
-        this.save()
-        return true
-    }
-
-    return false
-}
-
-programSchema.methods.transitions = function () {
-    return StateMachine({
-        init: this.status,
-        transitions: stateTransitions
-    }).transitions()
 }
 
 export const Program = mongoose.model('Program', programSchema)
-
